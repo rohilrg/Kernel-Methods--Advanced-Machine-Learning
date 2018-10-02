@@ -58,17 +58,17 @@ def kernel_pca(X,  n_components=2,type_of_kernel= None,gamma=0.1,poly_constant=1
         mat_sq_dists = squareform(sq_dists)
         # Computing the MxM kernel matrix.
         K = exp(-gamma * mat_sq_dists)
-        print(K.shape)
+
     if type_of_kernel == 'poly':
         K=[]
         for combinations in itertools.combinations(X, 2):
             k= (combinations[0].T.dot(combinations[1])+poly_constant)**number_of_features
-            print(k)
+
             K.append(k)
         K=np.array(K)
-        print(K.shape)
+
         K = squareform(K)
-        #print(K.shape)
+
     if type_of_kernel == 'sigmoid':
         K=[]
         for combinations in itertools.combinations(X, 2):
@@ -92,9 +92,9 @@ def kernel_pca(X,  n_components=2,type_of_kernel= None,gamma=0.1,poly_constant=1
     return X_pc
 
 
-def plot_graph(plot_for_rbf=False,plot_for_sigmoid=False,plot_for_poly=False,plot=True):
+def plot_graph(data,plot_for_rbf=False,plot_for_sigmoid=False,plot_for_poly=False,plot=True):
     plt.figure(figsize=(8, 6))
-    plt.scatter(X_pc[:, 0], X_pc[:, 1], c=color, cmap=plt.cm.rainbow)
+    plt.scatter(data[:, 0], data[:, 1], c=color, cmap=plt.cm.rainbow)
     if plot_for_rbf:
         plt.title('First 2 principal components after RBF Kernel PCA')
         plt.text(-0.14, 0.14, 'gamma = 0.1', fontsize=12)
@@ -112,13 +112,4 @@ def plot_graph(plot_for_rbf=False,plot_for_sigmoid=False,plot_for_poly=False,plo
         plt.show()
 
 
-if __name__ == '__main__':
-    X,color = swiss_roll_dataset(number_of_samples=1000,plot=True)
-    #print(color.shape)
-    #Implement Classic PCA
-    accuracy= classic_pca(X,color,n_components=1)
 
-    #X_pc = kernel_pca(X, n_components=2,type_of_kernel='sigmoid',poly_constant=10,sigmoid_alpha=0.1,sigmoid_constant=10)
-    transformer = KernelPCA(n_components=2, kernel='sigmoid')
-    X_pc = transformer.fit_transform(X)
-    plot_graph()
