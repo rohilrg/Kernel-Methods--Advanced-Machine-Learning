@@ -67,40 +67,10 @@ class K_Means:
         self.sigmoid_constant = sigmoid_constant
         self.sigmoid_alpha = sigmoid_alpha
 
-    def kernilize_data(self, data, type_of_kernel, gamma, poly_constant, sigmoid_constant, sigmoid_alpha):
-        number_of_feature = data.shape[1]
-        if type_of_kernel == 'rbf':
-            sq_dists = pdist(data, "sqeuclidean")
-            mat_sq_dists = squareform(sq_dists)
-            K = exp(-gamma * mat_sq_dists)
 
-        if type_of_kernel == 'poly':
-            K = []
-            for combinations in itertools.combinations(data, 2):
-                k = (combinations[0].T.dot(combinations[1]) +
-                     poly_constant)**number_of_feature
-                K.append(k)
-            K = np.array(K)
-            K = squareform(K)
-
-        if type_of_kernel == 'sigmoid':
-            K = []
-            for combinations in itertools.combinations(data, 2):
-                k = np.tanh(
-                    (sigmoid_alpha*(combinations[0].dot(combinations[1].T))+sigmoid_constant))
-                K.append(k)
-            K = np.array(K)
-            K = squareform(K)
-
-        N = K.shape[0]
-        one_n = np.ones((N, N)) / N
-        K = K - one_n.dot(K) - K.dot(one_n) + one_n.dot(K).dot(one_n)
-
-        return K
 
     def fit(self, data):
-        if self.type_of_kernel:
-            data = kernilize_data(self, data)
+
         self.centroids = {}
 
         # Centroids initialization
@@ -175,7 +145,7 @@ for classification in clf.classifications:
 
 plt.show()
 
-
+data = kernilize_data(data,type_of_kernel='rbf')
 clf = K_Means(k=4, type_of_kernel='rbf')
 clf.fit(data)
 
