@@ -36,6 +36,7 @@ def second_term(data, classifications, kernel_type=None, sigma=0.1, pol_constant
 
 def third_term(centroids, kernel_type=None, sigma=0.1, pol_constant=15, pol_degree=2, sig_alpha=0.1, sig_constant=1):
     result = 0
+    
     for i in range(len(centroids)):
         for j in range(len(centroids)):
             if kernel_type == "sig":
@@ -68,6 +69,7 @@ class K_Means:
 
         # Centroids initialization
         element = random.sample(range(0, data.shape[0]), self.k)
+        
         j = 0
         for i in element:
             self.centroids[j] = data[i]
@@ -98,10 +100,11 @@ class K_Means:
                     dist2 = [second_term(featureset, self.classifications[i], self.kernel_type, self.sigma,
                                          self.pol_constant, self.pol_degree, self.sig_alpha, self.sig_constant) for i in range(self.k)]
                     distances = np.add(dist1, np.add(dist2, dist3))
+                    classification = distances.tolist().index(min(distances))
                 else:
                     distances = [np.linalg.norm(
                         featureset-self.centroids[centroid], ord=2) for centroid in self.centroids]
-                classification = distances.tolist().index(min(distances))
+                    classification = distances.index(min(distances))
                 self.classifications[classification].append(featureset)
 
             prev_centroids = dict(self.centroids)
@@ -116,10 +119,12 @@ class K_Means:
             for c in self.centroids:
                 original_centroid = prev_centroids[c]
                 current_centroid = self.centroids[c]
-                print(original_centroid, current_centroid)
+                
 
                 if np.sum((current_centroid-original_centroid)/original_centroid*100.0) > self.tol:
                     optimized = False
 
             if optimized:
                 break
+
+
