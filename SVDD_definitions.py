@@ -8,6 +8,7 @@ from scipy.spatial.distance import pdist, squareform
 from cvxpy import *
 import pandas as pd
 from sklearn.metrics.pairwise import linear_kernel
+from scipy import stats
 
 def one_class_dataset_generator(n_samples= 100, n_features=2,number_of_outliers=20, random_state=222,plot=False):
     np.random.RandomState(seed=random_state)
@@ -52,10 +53,10 @@ def svdd(one_class_dataset_array,one_class_dataset,Constant_for_SVDD=0.1):
     #print((alpha.T*product_array_having_self_multiplication).shape)
 
     #print(constraint2,'fuc')
-    #constraint2= [np.ones((1,one_class_dataset_array.shape[0]))*alpha==1]
+    constraint2= [np.ones((1,one_class_dataset_array.shape[0]))*alpha==1]
     constraint = [alpha[i] <= Constant_for_SVDD for i in range(one_class_dataset.shape[0])]
     constraint1= [alpha[i] >= 0 for i in range(one_class_dataset.shape[0])]
-    constraint_f= constraint1+constraint
+    constraint_f= constraint1+constraint+constraint2
     product1_obj= alpha.T*np.diag(gm)
 
     #product2_obj= alpha.T*gm*alpha
@@ -81,23 +82,22 @@ def svdd(one_class_dataset_array,one_class_dataset,Constant_for_SVDD=0.1):
     ax.scatter(one_class_dataset_array[:, 0], one_class_dataset_array[:, 1])
     ax.plot(b[0],b[1],"or")
     plt.show()
-    count = 0
-    count2=0
-    count1=0
+    inside=[]
+    on_circle=[]
+    outside=[]
     for i in range(one_class_dataset_array.shape[0]):
 
-        if 0<a[i]<Constant_for_SVDD:
-            count1 += 1
-            print('Inside',a[i])
+        if a[i]<0.001:
+            inside.append(a[i])
+        if 0.001 <a[i] < 0.09:
+            on_circle.append(a[i])
+        if a[i] > 0.09:
+            outside.append(a[i])
 
-        else:
-            count2 += 1
-            print('Outside',a[i])
-
-    print('The number of points inside:',count,'on the circle is:',count1,'outside circle is:',count2)
+    print('The number of points inside:',len(inside),'on the circle is:',len(on_circle),'outside circle is:',len(outside))
 
 if __name__ == "__main__":
-    X_array,X=one_class_dataset_generator(n_samples=200,number_of_outliers=30,plot=True)
+    X_array,X=one_class_dataset_generator(n_samples=200,number_of_outliers=10,plot=True)
 
 
     svdd(X_array,X)
