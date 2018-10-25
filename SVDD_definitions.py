@@ -1,12 +1,11 @@
 __author__ = "rohil"
 
 import numpy as np
-import itertools
-from sklearn.datasets import make_classification
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import pdist, squareform
 from cvxpy import *
 import pandas as pd
+from sklearn.metrics.pairwise import linear_kernel
+from scipy.spatial import distance
 
 def one_class_dataset_generator(n_samples= 100, n_features=2,number_of_outliers=20, random_state=222,plot=False):
     np.random.RandomState(seed=random_state)
@@ -19,42 +18,67 @@ def one_class_dataset_generator(n_samples= 100, n_features=2,number_of_outliers=
         plt.show()
     X_dataset=pd.DataFrame(X_dataset_array)
     return X_dataset_array,X_dataset
-def gram_matrix(one_class_dataset_array, product_array):
-    for combination in itertools.combinations(one_class_dataset_array, 2):
-        product = np.dot(combination[0], combination[1])
-        product_array.append(product)
-    product_array = np.array(product_array)
-    gram_matrix = squareform(product_array)
-    print(gram_matrix)
-    return gram_matrix
 
-def svdd(one_class_dataset_array,one_class_dataset,epochs=100,learning_rate=0.1,Constant_for_SVDD=0.1):
+def gram_matrix(one_class_dataset_array, product_array):
+
+    gm= linear_kernel(one_class_dataset_array)
+    for i in range(gm.shape[0]):
+        gm[i,i]= gm[i,i]+0.0001
+    return gm
+
+def svdd(one_class_dataset_array,one_class_dataset,Constant_for_SVDD=0.1):
     product_array=[]
     gm = gram_matrix(one_class_dataset_array, product_array)
-    product_array_having_self_multiplication=[]
-    for idx,rows in one_class_dataset.iterrows():
-        product= np.dot(rows,rows)
-        print(product)
-        product_array_having_self_multiplication.append(product)
-    product_array_having_self_multiplication=np.array(product_array_having_self_multiplication)
 
-    alpha= Variable(one_class_dataset.shape[0])
 
+    # Variable declaration
+    alpha= Variable((one_class_dataset.shape[0],1))
+    #Constraints
+    constraint2 = [np.ones((1,one_class_dataset_array.shape[0]))*alpha==1]
     constraint = [alpha[i] <= Constant_for_SVDD for i in range(one_class_dataset.shape[0])]
-    constraint1= [alpha[i] >= 0 for i in range(one_class_dataset.shape[0])]
-    constraint_f= constraint+constraint1
-    objective_function= Maximize((alpha*product_array_having_self_multiplication)+np.sum(squareform(alpha.T*alpha*gm)))
+    constraint1 = [alpha[i] >= 0 for i in range(one_class_dataset.shape[0])]
+    constraint_f = constraint1+constraint+constraint2
+
+    #Objective_Function
+    product1_obj = alpha.T*np.diag(gm)
+    product2_obj= quad_form(alpha,Parameter(shape=gm.shape,value=gm, PSD=True))
+
+    objective_function= Maximize(product1_obj-product2_obj)
 
     problem= Problem(objective_function,constraint_f)
 
     problem.solve()
     print("Problem Status: %s" % problem.status)
-    print(alpha)
+    if problem.status =='optimal':
+        a=alpha.value
+        a= np.array(a).reshape((len(a),1))
+    else:
+        return
+    # Finding the Center of the circle
+    b=0
+    for i in range(one_class_dataset_array.shape[0]):
+        b+= a[i].T*one_class_dataset_array[i]
 
+    #Finding the Radius of Circle and plotting results
+    on_circle=[]
+    for i in range(one_class_dataset_array.shape[0]):
+        if 0.0001 <a[i] < Constant_for_SVDD-0.01:
+            on_circle.append(i)
+    if len(on_circle)!=0:
+        point_on_circle=one_class_dataset.loc[on_circle[0]]
+        radius= distance.euclidean(point_on_circle,b)
+        ax = plt.subplot(1, 1, 1)
+        ax.scatter(one_class_dataset_array[:, 0], one_class_dataset_array[:, 1])
+        circle=plt.Circle(b,radius,color='r',fill=False)
+        ax.add_artist(circle)
+        ax.plot(b[0], b[1], "or")
+        plt.show()
 
+    print('The number of support vectors are',len(on_circle))
 
 if __name__ == "__main__":
-    X_array,X=one_class_dataset_generator(n_samples=50,number_of_outliers=0,plot=False)
+    X_array,X=one_class_dataset_generator(n_samples=300,number_of_outliers=10,plot=True)
+
 
     svdd(X_array,X)
 
